@@ -18,6 +18,7 @@ jobs:
           echo "RELEASE_NAME=Released on $(date +%Y%m%d%H%M)" >> $GITHUB_ENV
           echo "TAG_NAME=$(date +%Y%m%d%H%M)" >> $GITHUB_ENV
 
+          echo "ANTIFILTER_DOWNLOAD=https://antifilter.download/list/domains.lst" >> $GITHUB_ENV
           echo "ANTIFILTER_DOWNLOAD_COMMUNITY=https://community.antifilter.download/list/domains.lst" >> $GITHUB_ENV
           echo "REFILTER_ALL=https://raw.githubusercontent.com/1andrevich/Re-filter-lists/refs/heads/main/domains_all.lst" >> $GITHUB_ENV
 
@@ -57,10 +58,11 @@ jobs:
 
       - name: Get and add domain lists
         run: |
+          curl -sSL $ANTIFILTER_DOWNLOAD > ./antifilter-download.txt
           curl -sSL $ANTIFILTER_DOWNLOAD_COMMUNITY > ./antifilter-download-community.txt
           curl -sSL $REFILTER_ALL > ./refilter.txt
 
-          cp {antifilter-download-community,refilter}.txt ./community/data/
+          cp {antifilter-download,antifilter-download-community,refilter}.txt ./community/data/
           for f in ./community/data/*.txt; do mv "$f" "${f//.txt/}"; done
 
           rm -rf ./additional/README.md
@@ -77,7 +79,8 @@ jobs:
 
       - name: Build Russia blocked list
         run: |
-          echo "include:antifilter-download-community" > ./community/data/ru-blocked
+          echo "include:antifilter-download" > ./community/data/ru-blocked
+          echo "include:antifilter-download-community" >> ./community/data/ru-blocked
           echo "include:refilter" >> ./community/data/ru-blocked
 
       - name: Build geosite.dat file
@@ -88,7 +91,7 @@ jobs:
       - name: Move and zip files and generate sha256 hash
         run: |
           install -Dp ./custom/publish/geosite.dat ./publish/geosite.dat
-          install -p {antifilter-download-community,refilter}.txt ./publish/
+          install -p {antifilter-download,antifilter-download-community,refilter}.txt ./publish/
           install -p ./custom/publish/{ru-blocked,private,category-ads-all,mobile-whitelist}.txt ./publish/
 
           (cd ./publish && sha256sum geosite.dat > geosite.dat.sha256sum)
